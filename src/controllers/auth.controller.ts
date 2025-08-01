@@ -33,7 +33,7 @@ export const registerUser = async (req: Request, res: Response) => {
       name: newUser.name,
       email: newUser.email,
       role: newUser.role,
-      token: generateToken(newUser._id.toString()),
+      token: generateToken(newUser._id.toString(), newUser.email, newUser.role),
     });
   } catch (error) {
     console.error('Error registering user:', error);
@@ -61,7 +61,7 @@ export const loginUser = async (req: Request, res: Response) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      token: generateToken(user._id.toString()),
+      token: generateToken(user._id.toString(), user.email, user.role),
     });
   } catch (error) {
     console.log('Error in Login..', error);
