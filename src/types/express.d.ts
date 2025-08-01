@@ -1,7 +1,7 @@
 export interface DecodedToken {
   id: string;
   email: string;
-  role: string;
+  role: 'client' | 'freelancer';
 }
 
 declare global {
