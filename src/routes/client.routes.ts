@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { verifyToken } from '../middlewares/auth.middleware';
 import { allowRoles } from '../middlewares/roleMiddleware';
+import { getMyJobs } from '../controllers/clientController';
 
 const clientRoutes = express.Router();
 
@@ -16,5 +17,6 @@ clientRoutes.post(
   }
 );
 
+clientRoutes.get('/my-jobs', verifyToken, allowRoles('client'), getMyJobs);
 
 export default clientRoutes;
