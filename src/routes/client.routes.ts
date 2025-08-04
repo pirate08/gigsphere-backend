@@ -3,6 +3,7 @@ import { verifyToken } from '../middlewares/auth.middleware';
 import { allowRoles } from '../middlewares/roleMiddleware';
 import {
   createJob,
+  getDataById,
   getMyJobs,
   updateJob,
 } from '../controllers/clientController';
@@ -17,5 +18,13 @@ clientRoutes.post('/jobs', verifyToken, allowRoles('client'), createJob);
 
 // --Update a job--
 clientRoutes.put('/jobs/:jobId', verifyToken, allowRoles('client'), updateJob);
+
+// --Get a single task by ID--
+clientRoutes.get(
+  '/jobs/:jobId',
+  verifyToken,
+  allowRoles('client'),
+  getDataById
+);
 
 export default clientRoutes;

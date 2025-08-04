@@ -86,3 +86,29 @@ export const updateJob = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Server Error' });
   }
 };
+
+// --Get a single job details by ID--
+export const getDataById = async (req: Request, res: Response) => {
+  try {
+    const clientId = req.user?.id;
+    const jobId = req.params.jobId;
+
+    if (!clientId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const findJob = await JobModel.findOne({ _id: jobId, clientId });
+
+    if (!findJob) {
+      return res.status(404).json({ message: 'No job find in that id.' });
+    }
+
+    return res.status(200).json({
+      message: 'Single job fetched successfully',
+      jobs: findJob,
+    });
+  } catch (error) {
+    console.log('Unable to find job in that id');
+    return res.status(500).json({ message: 'Server Error' });
+  }
+};
