@@ -105,10 +105,41 @@ export const getDataById = async (req: Request, res: Response) => {
 
     return res.status(200).json({
       message: 'Single job fetched successfully',
-      jobs: findJob,
+      job: findJob,
     });
   } catch (error) {
-    console.log('Unable to find job in that id');
+    console.log('Unable to find job in that id', error);
+    return res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// --Delete a job--
+export const deleteAJob = async (req: Request, res: Response) => {
+  try {
+    const clientId = req.user?.id;
+    const jobId = req.params.jobId;
+
+    if (!clientId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const deleteJob = await JobModel.findByIdAndDelete({
+      _id: jobId,
+      clientId,
+    });
+
+    if (!deleteJob) {
+      return res
+        .status(404)
+        .json({ message: 'Could not find any job to delete' });
+    }
+
+    return res.status(200).json({
+      message: 'Job Deleted',
+      job: deleteJob,
+    });
+  } catch (error) {
+    console.log('Unable to delete a job', error);
     return res.status(500).json({ message: 'Server Error' });
   }
 };

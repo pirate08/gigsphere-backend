@@ -3,6 +3,7 @@ import { verifyToken } from '../middlewares/auth.middleware';
 import { allowRoles } from '../middlewares/roleMiddleware';
 import {
   createJob,
+  deleteAJob,
   getDataById,
   getMyJobs,
   updateJob,
@@ -25,6 +26,14 @@ clientRoutes.get(
   verifyToken,
   allowRoles('client'),
   getDataById
+);
+
+// --Delete a job--
+clientRoutes.delete(
+  '/jobs/:jobId',
+  verifyToken,
+  allowRoles('client'),
+  deleteAJob
 );
 
 export default clientRoutes;
