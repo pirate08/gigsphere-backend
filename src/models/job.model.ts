@@ -6,6 +6,7 @@ export interface Job extends Document {
   location: string;
   employmentType: 'full-time' | 'part-time' | 'contract' | 'internship';
   budget: number;
+  skills: string[];
   clientId: mongoose.Types.ObjectId;
   status: 'open' | 'closed' | 'draft';
   createdAt: Date;
@@ -38,6 +39,16 @@ const jobSchema = new Schema<Job>(
       type: Number,
       required: true,
     },
+    skills: {
+      type: [String],
+      required: true,
+      validate: {
+        validator: function (skills: string[]) {
+          return skills.length > 0;
+        },
+        message: 'At least one skill is required',
+      },
+    },
     clientId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -51,6 +62,11 @@ const jobSchema = new Schema<Job>(
   },
   { timestamps: true }
 );
+
+// Add indexes for better query performance
+jobSchema.index({ clientId: 1 });
+jobSchema.index({ status: 1 });
+jobSchema.index({ skills: 1 });
 
 const JobModel = mongoose.model<Job>('Job', jobSchema);
 

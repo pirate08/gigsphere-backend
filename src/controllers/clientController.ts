@@ -55,3 +55,34 @@ export const createJob = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Server Error' });
   }
 };
+
+// --Update a job--
+export const updateJob = async (req: Request, res: Response) => {
+  try {
+    const clientId = req.user?.id;
+    const jobId = req.params.jobId;
+
+    if (!clientId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    // --Update the job if it belongs to the logged in client--
+    const updatedJob = await JobModel.findOneAndUpdate(
+      { _id: jobId, clientId },
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedJob) {
+      return res.status(404).json({ message: 'Job not found or unauthorized' });
+    }
+
+    return res.status(200).json({
+      message: 'Job Updated Successfully',
+      job: updatedJob,
+    });
+  } catch (error) {
+    console.log('Failed to Update Job', error);
+    return res.status(500).json({ message: 'Server Error' });
+  }
+};
