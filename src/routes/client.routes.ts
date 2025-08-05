@@ -8,6 +8,7 @@ import {
   getMyJobs,
   updateJob,
 } from '../controllers/clientController';
+import { getApplicationByJob } from '../controllers/applicationController';
 
 const clientRoutes = express.Router();
 
@@ -34,6 +35,14 @@ clientRoutes.delete(
   verifyToken,
   allowRoles('client'),
   deleteAJob
+);
+
+// --View Applicants per job--
+clientRoutes.get(
+  '/jobs/:jobId/applications',
+  verifyToken,
+  allowRoles('client'),
+  getApplicationByJob
 );
 
 export default clientRoutes;
