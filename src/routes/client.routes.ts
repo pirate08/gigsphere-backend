@@ -8,7 +8,10 @@ import {
   getMyJobs,
   updateJob,
 } from '../controllers/clientController';
-import { getApplicationByJob } from '../controllers/applicationController';
+import {
+  acceptOrRejectApplicant,
+  getApplicationByJob,
+} from '../controllers/applicationController';
 
 const clientRoutes = express.Router();
 
@@ -43,6 +46,14 @@ clientRoutes.get(
   verifyToken,
   allowRoles('client'),
   getApplicationByJob
+);
+
+// --Accept or reject--
+clientRoutes.patch(
+  '/applicants/:applicantId/status',
+  verifyToken,
+  allowRoles('client'),
+  acceptOrRejectApplicant
 );
 
 export default clientRoutes;

@@ -44,3 +44,49 @@ export const getApplicationByJob = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 };
+
+// --Accept or Reject Applicants--
+export const acceptOrRejectApplicant = async (req: Request, res: Response) => {
+  try {
+    const clientId = req.user?.id;
+    const applicantId = req.params.applicationId;
+    const { status } = req.body;
+
+    // Check if the client is logged in or not--
+    if (!clientId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const validStatuses = ['pending', 'accepted', 'rejected'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+
+    // --Find the Application--
+    const application = await ApplicationModel.findById({
+      _id: applicantId,
+    }).populate('jobId');
+
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    // Cast application.jobId to any to access its properties
+    const populatedJob = application.jobId as any;
+
+    // --Check if the job belongs to the logged in client--
+    if (populatedJob.clientId.toString() !== clientId) {
+      return res.status(403).json({ message: 'Forbidden: Not your job' });
+    }
+
+    application.status = status;
+    await application.save();
+
+    return res
+      .status(200)
+      .json({ message: `Application ${status}`, application });
+  } catch (error) {
+    console.log('Cannot accept or reject the applicant');
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
