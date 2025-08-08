@@ -11,6 +11,7 @@ import {
 import {
   acceptOrRejectApplicant,
   getApplicationByJob,
+  viewAllApplicants,
 } from '../controllers/applicationController';
 
 const clientRoutes = express.Router();
@@ -54,6 +55,14 @@ clientRoutes.patch(
   verifyToken,
   allowRoles('client'),
   acceptOrRejectApplicant
+);
+
+// --View All Applicants--
+clientRoutes.get(
+  '/applicants',
+  verifyToken,
+  allowRoles('client'),
+  viewAllApplicants
 );
 
 export default clientRoutes;

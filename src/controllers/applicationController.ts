@@ -90,3 +90,33 @@ export const acceptOrRejectApplicant = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 };
+
+// --View All Applicants--
+export const viewAllApplicants = async (req: Request, res: Response) => {
+  try {
+    const clientId = req.user?.id;
+
+    if (!clientId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    // --Find All Jobs--
+    const clientJobs = await JobModel.find({ clientId }).select('_id');
+
+    const jobIds = clientJobs.map((job) => job._id);
+
+    // --All applicants from client Job
+    const applications = await ApplicationModel.find({
+      jobId: { $in: jobIds },
+    })
+      .populate('jobId')
+      .populate('freelancerId');
+
+    return res
+      .status(200)
+      .json({ message: 'All applicants fetched', applications });
+  } catch (error) {
+    console.log('Failed to fetch all applicants', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
