@@ -13,6 +13,7 @@ import {
   getApplicationByJob,
   viewAllApplicants,
 } from '../controllers/applicationController';
+import { searchFreelancers } from '../controllers/searchController';
 
 const clientRoutes = express.Router();
 
@@ -63,6 +64,19 @@ clientRoutes.get(
   verifyToken,
   allowRoles('client'),
   viewAllApplicants
+);
+
+// Description: Search freelancers by name, skills, etc.
+// Query params:
+//   name   - Filter by freelancer name (optional)
+//   skills - Comma-separated list of skills (optional)
+//   page   - Page number for pagination (default: 1)
+//   limit  - Items per page (default: 10)
+clientRoutes.get(
+  '/search/freelancers',
+  verifyToken,
+  allowRoles('client'),
+  searchFreelancers
 );
 
 export default clientRoutes;
