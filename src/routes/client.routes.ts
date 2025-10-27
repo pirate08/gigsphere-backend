@@ -14,8 +14,12 @@ import {
   viewAllApplicants,
 } from '../controllers/applicationController';
 import { searchFreelancers } from '../controllers/searchController';
+import { getProfileData } from '../controllers/profileController';
 
 const clientRoutes = express.Router();
+
+// --Get Profile Data and Job Statistics (Total, Open, Draft, Closed)--
+clientRoutes.get('/profile', verifyToken, allowRoles('client'), getProfileData);
 
 // --Get all jobs--
 clientRoutes.get('/my-jobs', verifyToken, allowRoles('client'), getMyJobs);
