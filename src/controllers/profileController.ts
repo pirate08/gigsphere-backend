@@ -61,3 +61,66 @@ export const getProfileData = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Server Error' });
   }
 };
+
+// --Update name and email--
+export const updateProfileDetails = async (req: Request, res: Response) => {
+  try {
+    const clientId = req.user?.id;
+
+    if (!clientId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const userIdString = req.user?.id;
+    const { fullName, email } = req.body;
+
+    // --Validate Input--
+    if (!fullName || !email) {
+      return res
+        .status(400)
+        .json({ message: 'Full name and email are required' });
+    }
+
+    const mongooseUserId = new Types.ObjectId(userIdString);
+
+    // --Check if the new email is already taken by another user--
+    const existingUser = await UserModel.findOne({
+      email: email.toLowerCase(),
+      _id: { $ne: mongooseUserId },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email is already in use' });
+    }
+
+    // --Update User Details--
+    const updateUser = await UserModel.findByIdAndUpdate(
+      mongooseUserId,
+      {
+        name: fullName,
+        email: email.toLowerCase(),
+      },
+      {
+        new: true,
+        runValidators: true,
+        select: 'name email',
+      }
+    );
+
+    if (!updateUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // --Send response--
+    return res.status(200).json({
+      message: 'Profile updated successfully',
+      user: {
+        fullName: updateUser.name,
+        email: updateUser.email,
+      },
+    });
+  } catch (error) {
+    console.log('Error updating profile details', error);
+    return res.status(500).json({ message: 'Server Error' });
+  }
+};

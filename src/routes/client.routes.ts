@@ -14,12 +14,23 @@ import {
   viewAllApplicants,
 } from '../controllers/applicationController';
 import { searchFreelancers } from '../controllers/searchController';
-import { getProfileData } from '../controllers/profileController';
+import {
+  getProfileData,
+  updateProfileDetails,
+} from '../controllers/profileController';
 
 const clientRoutes = express.Router();
 
 // --Get Profile Data and Job Statistics (Total, Open, Draft, Closed)--
 clientRoutes.get('/profile', verifyToken, allowRoles('client'), getProfileData);
+
+// --Update Profile Details (name, email)--
+clientRoutes.patch(
+  '/profile/details',
+  verifyToken,
+  allowRoles('client'),
+  updateProfileDetails
+);
 
 // --Get all jobs--
 clientRoutes.get('/my-jobs', verifyToken, allowRoles('client'), getMyJobs);
