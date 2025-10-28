@@ -15,6 +15,7 @@ import {
 } from '../controllers/applicationController';
 import { searchFreelancers } from '../controllers/searchController';
 import {
+  changePassword,
   getProfileData,
   updateProfileDetails,
 } from '../controllers/profileController';
@@ -30,6 +31,14 @@ clientRoutes.patch(
   verifyToken,
   allowRoles('client'),
   updateProfileDetails
+);
+
+// --Change Password--
+clientRoutes.patch(
+  '/profile/password',
+  verifyToken,
+  allowRoles('client'),
+  changePassword
 );
 
 // --Get all jobs--
