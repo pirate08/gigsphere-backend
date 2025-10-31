@@ -73,7 +73,7 @@ export interface IFreelancerProfile extends Document {
   yearsOfExperience: number;
   hourlyRate: number;
   location: string;
-  portfolio: { name: string; description?: string; url: string }[];
+  portfolio: { name: string; description: string; url: string }[];
   certificates: { name: string; issuer?: string; date?: Date }[];
   experience: {
     title: string;

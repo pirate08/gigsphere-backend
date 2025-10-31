@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import router from './routes/auth.routes';
 import protectedRoutes from './routes/protected';
 import clientRoutes from './routes/client.routes';
+import freelanceRoutes from './routes/freelancer.routes';
 
 dotenv.config();
 connectDb();
@@ -20,7 +21,10 @@ app.use('/api/auth', router);
 // --Protected routes--
 app.use('/api/protected', protectedRoutes);
 
-// --Client routes for creating job--
+// --Client routes--
 app.use('/api/client', clientRoutes);
+
+// --Freelancer routes--
+app.use('/api/freelancer', freelanceRoutes);
 
 export default app;

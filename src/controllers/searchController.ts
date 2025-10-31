@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import UserModel from '../models/user.model';
-import JobModel from '../models/job.model';
+import FreelancerProfile from '../models/freelancerProfile.model';
 import ApplicationModel from '../models/application.model';
 
 export const searchFreelancers = async (req: Request, res: Response) => {
@@ -11,52 +11,74 @@ export const searchFreelancers = async (req: Request, res: Response) => {
     if (!clientId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
+
     // --Extract query parameters--
     const { name, skills, page = 1, limit = 10 } = req.query;
     // --Skip the first (page - 1) * limit results--
     const skip = (Number(page) - 1) * Number(limit);
 
-    // --Search only for freelancers--
-    const searchQuery: any = { role: 'freelancer' };
+    // --Build the profile query--
+    const profileQuery: any = {};
 
-    // --Handling the name paramater--
+    // --Handle name parameter (search in User model)--
+    let userIds: any[] = [];
     if (name) {
-      searchQuery.name = { $regex: name as String, $options: 'i' };
+      const users = await UserModel.find({
+        name: { $regex: name as string, $options: 'i' },
+        role: 'freelancer',
+      }).select('_id');
+      userIds = users.map((u) => u._id);
+
+      if (userIds.length === 0) {
+        // No users found with that name
+        return res.status(200).json({
+          message: 'No freelancers found',
+          freelancers: [],
+          pagination: {
+            currentPage: Number(page),
+            limit: Number(limit),
+            total: 0,
+            totalPages: 0,
+          },
+        });
+      }
+
+      profileQuery.userId = { $in: userIds };
     }
 
-    // --Handling the skills parameter--
+    // --Handle skills parameter (search in FreelancerProfile)--
     if (skills) {
       const skillsArray = Array.isArray(skills)
         ? (skills as string[])
         : (skills as string).split(',').map((s) => s.trim());
-      searchQuery.skills = {
+      profileQuery.skills = {
         $in: skillsArray.map((skill) => new RegExp(skill, 'i')),
       };
     }
 
-    // --Fetch freelancers from the database--
-    const [freelancers, total] = await Promise.all([
-      UserModel.find(searchQuery)
-        .select('-password')
+    // --Fetch freelancer profiles from the database--
+    const [profiles, total] = await Promise.all([
+      FreelancerProfile.find(profileQuery)
+        .populate('userId', 'name email role createdAt') // Populate user data
         .skip(skip)
         .limit(Number(limit))
         .sort({ createdAt: -1 }),
 
-      UserModel.countDocuments(searchQuery),
+      FreelancerProfile.countDocuments(profileQuery),
     ]);
 
-    // Get all freelancer IDs
-    const freelancerIds = freelancers.map((f) => f._id);
+    // Get all user IDs from profiles
+    const freelancerUserIds = profiles.map((p) => p.userId);
 
     // Get all applications for these freelancers (with job info)
     const applications = await ApplicationModel.find({
-      userId: { $in: freelancerIds },
+      userId: { $in: freelancerUserIds },
     })
       .populate('jobId', 'title clientId')
       .select('userId status appliedAt coverLetter jobId');
 
     // Group applications by freelancer
-    const applicationsByFreelancer = freelancerIds.reduce((acc, id) => {
+    const applicationsByFreelancer = freelancerUserIds.reduce((acc, id) => {
       acc[id.toString()] = [];
       return acc;
     }, {} as Record<string, any[]>);
@@ -65,15 +87,29 @@ export const searchFreelancers = async (req: Request, res: Response) => {
       applicationsByFreelancer[app.userId.toString()].push(app);
     });
 
-    // Build final response
-    const freelancersWithHistory = freelancers.map((freelancer) => {
-      const apps = applicationsByFreelancer[freelancer._id.toString()] || [];
+    // Build final response - merge User data with Profile data
+    const freelancersWithHistory = profiles.map((profile: any) => {
+      const user = profile.userId;
+      const apps = applicationsByFreelancer[user._id.toString()] || [];
       const appsToClientJobs = apps.filter(
         (a) => a.jobId && (a.jobId as any).clientId?.toString() === clientId
       );
 
       return {
-        ...freelancer.toObject(),
+        _id: profile._id,
+
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        bio: profile.description,
+        location: profile.location,
+        skills: profile.skills,
+        qualification: profile.qualification,
+        yearsOfExperience: profile.yearsOfExperience,
+        hourlyRate: profile.hourlyRate,
+        portfolio: profile.portfolio,
+        certificates: profile.certificates,
+        experience: profile.experience,
         totalApplications: apps.length,
         applicationsToYourJobs: appsToClientJobs.length,
         recentApplications: appsToClientJobs.slice(0, 3), // last 3
