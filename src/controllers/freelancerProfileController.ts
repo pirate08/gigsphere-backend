@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
 import FreelancerProfile from '../models/freelancerProfile.model';
-// import UserModel from '../models/user.model';
+import UserModel from '../models/user.model';
 // import ApplicationModel from '../models/application.model';
 
 // --Get and Convert Authenticated User ID--
@@ -47,5 +47,40 @@ export const createProfile = async (req: Request, res: Response) => {
   } catch (error) {
     console.log('Error in creating the profile ', error);
     return res.status(500).json({ message: 'Server error creating profile' });
+  }
+};
+
+// --Get Profile Details(GET)--
+export const getProfileDetails = async (req: Request, res: Response) => {
+  try {
+    // --Authorization check--
+    const userId = getUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: 'Authorization required.' });
+    }
+    // --Find the name and email--
+    const user = await UserModel.findById(userId).select('name email');
+    if (!user) {
+      return res.status(401).json({ message: 'User account not found.' });
+    }
+
+    // --Fetch Profile from the database--
+    const profile = await FreelancerProfile.findOne({ userId });
+
+    // --Formating the resposne--
+    const responseData = {
+      fullName: user.name,
+      email: user.email,
+      avatar: user.name ? user.name.charAt(0).toUpperCase() : '?',
+      profile: profile || null,
+    };
+
+    return res.status(200).json({
+      message: 'Profile fetched successfully',
+      responseData,
+    });
+  } catch (error) {
+    console.log('Error fetching profile', error);
+    return res.status(500).json({ message: 'Error in fetching user profile.' });
   }
 };
