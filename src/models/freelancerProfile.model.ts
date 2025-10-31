@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+// // Sub-schemas for complex data structures
 const PortfolioSchema = new Schema(
   {
     name: {
@@ -84,6 +85,7 @@ export interface IFreelancerProfile extends Document {
   }[];
 }
 
+// --Main Schema--
 const FreelancerProfileSchema = new Schema(
   {
     userId: {
