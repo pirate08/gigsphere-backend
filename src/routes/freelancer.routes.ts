@@ -4,6 +4,7 @@ import { allowRoles } from '../middlewares/roleMiddleware';
 import {
   createProfile,
   getProfileDetails,
+  updateProfileDetails,
 } from '../controllers/freelancerProfileController';
 
 const freelanceRoutes = express.Router();
@@ -22,6 +23,14 @@ freelanceRoutes.get(
   verifyToken,
   allowRoles('freelancer'),
   getProfileDetails
+);
+
+// --Update profile details--
+freelanceRoutes.patch(
+  '/update-profile',
+  verifyToken,
+  allowRoles('freelancer'),
+  updateProfileDetails
 );
 
 export default freelanceRoutes;
