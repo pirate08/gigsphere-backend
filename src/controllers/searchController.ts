@@ -14,6 +14,11 @@ export const searchFreelancers = async (req: Request, res: Response) => {
 
     // --Extract query parameters--
     const { name, skills, page = 1, limit = 10 } = req.query;
+
+    // 🔍 DEBUG: Log incoming parameters
+    console.log('=== SEARCH DEBUG ===');
+    console.log('Search params:', { name, skills, page, limit });
+
     // --Skip the first (page - 1) * limit results--
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -29,8 +34,9 @@ export const searchFreelancers = async (req: Request, res: Response) => {
       }).select('_id');
       userIds = users.map((u) => u._id);
 
+      console.log('Users found by name:', userIds.length);
+
       if (userIds.length === 0) {
-        // No users found with that name
         return res.status(200).json({
           message: 'No freelancers found',
           freelancers: [],
@@ -46,26 +52,48 @@ export const searchFreelancers = async (req: Request, res: Response) => {
       profileQuery.userId = { $in: userIds };
     }
 
-    // --Handle skills parameter (search in FreelancerProfile)--
+    // ✅ FIXED: Handle skills parameter - THREE DIFFERENT APPROACHES
     if (skills) {
       const skillsArray = Array.isArray(skills)
         ? (skills as string[])
         : (skills as string).split(',').map((s) => s.trim());
+
+      console.log('Skills array:', skillsArray);
+
+      const regexPattern = skillsArray.join('|');
       profileQuery.skills = {
-        $in: skillsArray.map((skill) => new RegExp(skill, 'i')),
+        $regex: new RegExp(regexPattern, 'i'),
       };
+
+      console.log(
+        'Profile query for skills:',
+        JSON.stringify(profileQuery.skills)
+      );
     }
+
+    // 🔍 DEBUG: Log final query
+    console.log('Final profile query:', JSON.stringify(profileQuery));
+
+    // 🔍 DEBUG: First, let's see what profiles exist
+    const allProfiles = await FreelancerProfile.find({}).limit(5);
+    console.log('Sample profiles in DB:');
+    allProfiles.forEach((p) => {
+      console.log('- Profile skills:', p.skills);
+    });
 
     // --Fetch freelancer profiles from the database--
     const [profiles, total] = await Promise.all([
       FreelancerProfile.find(profileQuery)
-        .populate('userId', 'name email role createdAt') // Populate user data
+        .populate('userId', 'name email role createdAt')
         .skip(skip)
         .limit(Number(limit))
         .sort({ createdAt: -1 }),
 
       FreelancerProfile.countDocuments(profileQuery),
     ]);
+
+    console.log('Profiles found:', profiles.length);
+    console.log('Total count:', total);
 
     // Get all user IDs from profiles
     const freelancerUserIds = profiles.map((p) => p.userId);
@@ -97,7 +125,6 @@ export const searchFreelancers = async (req: Request, res: Response) => {
 
       return {
         _id: profile._id,
-
         name: user.name,
         email: user.email,
         role: user.role,
@@ -112,9 +139,11 @@ export const searchFreelancers = async (req: Request, res: Response) => {
         experience: profile.experience,
         totalApplications: apps.length,
         applicationsToYourJobs: appsToClientJobs.length,
-        recentApplications: appsToClientJobs.slice(0, 3), // last 3
+        recentApplications: appsToClientJobs.slice(0, 3),
       };
     });
+
+    console.log('=== END DEBUG ===\n');
 
     return res.status(200).json({
       message: 'Freelancers found successfully',
