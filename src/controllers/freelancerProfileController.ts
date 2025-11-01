@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { Types } from 'mongoose';
 import FreelancerProfile from '../models/freelancerProfile.model';
 import UserModel from '../models/user.model';
-// import ApplicationModel from '../models/application.model';
+import ApplicationModel from '../models/application.model';
 
 // --Get and Convert Authenticated User ID--
 const getUserId = (req: Request): Types.ObjectId | null => {
@@ -259,5 +259,58 @@ export const updateProfileDetails = async (req: Request, res: Response) => {
       message: 'Error in updating profile details',
       error: error.message || 'Unknown error',
     });
+  }
+};
+
+// --Freelancer Dashboard Stats(GET)--
+export const getDashboardStats = async (req: Request, res: Response) => {
+  try {
+    // --Authorization Check--
+    const userId = getUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: 'Authorization required' });
+    }
+
+    // --Fetch dashboard stats--
+    const stats = await ApplicationModel.aggregate([
+      { $match: { freelancerId: userId } },
+      {
+        $facet: {
+          // --1.Total Applied--
+          totalApplied: [{ $count: 'count' }],
+          // --2.Pending Applications--
+          pendingApplications: [
+            { $match: { status: 'pending' } },
+            { $count: 'count' },
+          ],
+          // --3.Accepted Jobs--
+          acceptedApplications: [
+            { $match: { status: 'accepted' } },
+            { $count: 'count' },
+          ],
+          // --4.Rejected Applications--
+          rejectedApplications: [
+            { $match: { status: 'rejected' } },
+            { $count: 'count' },
+          ],
+        },
+      },
+    ]);
+
+    const jobStats = {
+      totalApplied: stats[0]?.totalApplied[0]?.count || 0,
+      pendingApplications: stats[0]?.pendingApplications[0]?.count || 0,
+      acceptedApplications: stats[0]?.acceptedApplications[0]?.count || 0,
+      rejectedApplications: stats[0]?.rejectedApplications[0]?.count || 0,
+    };
+
+    return res
+      .status(200)
+      .json({ message: 'Dashboard details fetched successfully', jobStats });
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    return res
+      .status(500)
+      .json({ message: 'Failed to fetch dashboard statistics.' });
   }
 };

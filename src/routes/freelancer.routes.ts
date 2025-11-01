@@ -3,6 +3,7 @@ import { verifyToken } from '../middlewares/auth.middleware';
 import { allowRoles } from '../middlewares/roleMiddleware';
 import {
   createProfile,
+  getDashboardStats,
   getProfileDetails,
   updateProfileDetails,
 } from '../controllers/freelancerProfileController';
@@ -31,6 +32,14 @@ freelanceRoutes.patch(
   verifyToken,
   allowRoles('freelancer'),
   updateProfileDetails
+);
+
+// -- Fetch dashboard details--
+freelanceRoutes.get(  
+  '/dashboard',
+  verifyToken,
+  allowRoles('freelancer'),
+  getDashboardStats
 );
 
 export default freelanceRoutes;
