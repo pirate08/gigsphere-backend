@@ -7,6 +7,7 @@ import {
   getProfileDetails,
   updateProfileDetails,
 } from '../controllers/freelancerProfileController';
+import { browseJobs } from '../controllers/browseJobController';
 
 const freelanceRoutes = express.Router();
 
@@ -35,11 +36,14 @@ freelanceRoutes.patch(
 );
 
 // -- Fetch dashboard details--
-freelanceRoutes.get(  
+freelanceRoutes.get(
   '/dashboard',
   verifyToken,
   allowRoles('freelancer'),
   getDashboardStats
 );
+
+// -- Fetch all jobs based on filters, search, and pagination --
+freelanceRoutes.get('/jobs', verifyToken, allowRoles('freelancer'), browseJobs);
 
 export default freelanceRoutes;
