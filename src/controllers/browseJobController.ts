@@ -3,6 +3,7 @@ import ApplicationModel from '../models/application.model';
 import JobModel from '../models/job.model';
 import { Types } from 'mongoose';
 import { ParsedQs } from 'qs';
+import { title } from 'process';
 
 // Define the shape of the expected query parameters (local to this controller)
 interface JobQuery {
@@ -13,6 +14,11 @@ interface JobQuery {
   maxRate?: string;
   page?: string;
   limit?: string;
+}
+
+interface ApplyJobProp {
+  jobId: string;
+  coverLetter: string;
 }
 
 interface AuthenticatedRequest<TQuery = JobQuery> extends Request {
@@ -206,5 +212,84 @@ export const getSingleJobdetails = async (
     return res
       .status(500)
       .json({ message: 'Server error while fetching job details.' });
+  }
+};
+
+// --Apply to a job (POST)--
+export const applyToAJob = async (
+  req: Request<{}, {}, ApplyJobProp>,
+  res: Response
+) => {
+  try {
+    // --Authorization Check--
+    const userId = getUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: 'Authorization required..' });
+    }
+
+    // --Requesting the data--
+    const { jobId, coverLetter } = req.body;
+
+    // --Input Validation--
+    if (!jobId || !coverLetter) {
+      return res
+        .status(400)
+        .json({ message: 'Missing required fields: jobId and coverLetter.' });
+    }
+    // --Validate jobId format--
+    if (!Types.ObjectId.isValid(jobId)) {
+      return res.status(400).json({ message: 'Invalid Job Id Format..' });
+    }
+
+    // --New objectId--
+    const jobObjectId = new Types.ObjectId(jobId);
+
+    // --Check if the Job exists and its status is open
+    const job = await JobModel.findOne({
+      _id: jobObjectId,
+      status: 'open',
+    })
+      .select('title')
+      .lean();
+
+    if (!job) {
+      return res.status(404).json({
+        message: 'Job not found, or it is no longer open for applications.',
+      });
+    }
+
+    // --Check for duplicate application--
+    const existingApplication = await ApplicationModel.findOne({
+      jobId: jobObjectId,
+      userId: userId,
+    });
+
+    if (existingApplication) {
+      return res
+        .status(409)
+        .json({ message: 'You have already applied to this job.' });
+    }
+
+    const newApplication = new ApplicationModel({
+      jobId: jobObjectId,
+      userId: userId,
+      coverLetter: coverLetter,
+    });
+
+    const savedApplication = await newApplication.save();
+
+    return res.status(200).json({
+      message: 'Application submitted successfully',
+      data: {
+        jobTitle: job.title,
+        application: savedApplication.toObject(),
+        hasApplied: true,
+      },
+    });
+  } catch (error) {
+    console.log('Error in applying the job', error);
+    return res
+      .status(500)
+      .json({ message: 'Server error during job application' });
   }
 };

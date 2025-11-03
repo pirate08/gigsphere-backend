@@ -8,6 +8,7 @@ import {
   updateProfileDetails,
 } from '../controllers/freelancerProfileController';
 import {
+  applyToAJob,
   browseJobs,
   getSingleJobdetails,
 } from '../controllers/browseJobController';
@@ -49,12 +50,20 @@ freelanceRoutes.get(
 // -- Fetch all jobs based on filters, search, and pagination --
 freelanceRoutes.get('/jobs', verifyToken, allowRoles('freelancer'), browseJobs);
 
-// --Fetch single job details
+// --Fetch single job details--
 freelanceRoutes.get(
   '/jobs/:jobId',
   verifyToken,
   allowRoles('freelancer'),
   getSingleJobdetails
+);
+
+// --Apply to a job--
+freelanceRoutes.post(
+  '/jobs/apply',
+  verifyToken,
+  allowRoles('freelancer'),
+  applyToAJob
 );
 
 export default freelanceRoutes;

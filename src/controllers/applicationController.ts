@@ -1,6 +1,7 @@
 import ApplicationModel from '../models/application.model';
 import JobModel from '../models/job.model';
 import { Request, Response } from 'express';
+import { Types } from 'mongoose';
 
 // --View Applications per job--
 export const getApplicationByJob = async (req: Request, res: Response) => {
@@ -21,7 +22,7 @@ export const getApplicationByJob = async (req: Request, res: Response) => {
     }
 
     // --Fetch all applications according to the job--
-    const applications = await ApplicationModel.find({ job: jobId })
+    const applications = await ApplicationModel.find({ jobId: jobId })
       .populate('userId', 'name email')
       .sort({ appliedAt: -1 });
 
@@ -49,12 +50,17 @@ export const getApplicationByJob = async (req: Request, res: Response) => {
 export const acceptOrRejectApplicant = async (req: Request, res: Response) => {
   try {
     const clientId = req.user?.id;
-    const applicantId = req.params.applicationId;
+    const applicantId = req.params.applicantId; // Fixed: was applicationId
     const { status } = req.body;
 
     // Check if the client is logged in or not--
     if (!clientId) {
       return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    // Validate applicantId
+    if (!applicantId || !Types.ObjectId.isValid(applicantId)) {
+      return res.status(400).json({ message: 'Invalid applicant ID' });
     }
 
     const validStatuses = ['pending', 'accepted', 'rejected'];
@@ -63,9 +69,9 @@ export const acceptOrRejectApplicant = async (req: Request, res: Response) => {
     }
 
     // --Find the Application--
-    const application = await ApplicationModel.findById({
-      _id: applicantId,
-    }).populate('jobId');
+    const application = await ApplicationModel.findById(applicantId).populate(
+      'jobId'
+    ); // Fixed: removed object wrapper
 
     if (!application) {
       return res.status(404).json({ message: 'Application not found' });
@@ -86,7 +92,7 @@ export const acceptOrRejectApplicant = async (req: Request, res: Response) => {
       .status(200)
       .json({ message: `Application ${status}`, application });
   } catch (error) {
-    console.log('Cannot accept or reject the applicant');
+    console.log('Cannot accept or reject the applicant', error);
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 };
@@ -110,7 +116,7 @@ export const viewAllApplicants = async (req: Request, res: Response) => {
       jobId: { $in: jobIds },
     })
       .populate('jobId')
-      .populate('freelancerId');
+      .populate('userId');
 
     return res
       .status(200)
