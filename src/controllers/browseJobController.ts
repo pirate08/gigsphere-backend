@@ -29,6 +29,7 @@ const getUserId = (req: Request): Types.ObjectId | null => {
   }
 };
 
+// --Browse Jobs(GET) eg - jobs with open status and search such as - React etc.
 export const browseJobs = async (req: AuthenticatedRequest, res: Response) => {
   try {
     // --Authorization Check--
@@ -126,7 +127,7 @@ export const browseJobs = async (req: AuthenticatedRequest, res: Response) => {
 
     const jobsWithMetadata = jobs.map((job) => ({
       ...job,
-      
+
       hasApplied: appliedJobIds.includes(job._id.toString()),
     }));
 
@@ -144,5 +145,66 @@ export const browseJobs = async (req: AuthenticatedRequest, res: Response) => {
     return res
       .status(500)
       .json({ message: 'Server error while fetching jobs.' });
+  }
+};
+
+// --Display single Jobs details (GET)--
+export const getSingleJobdetails = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  try {
+    // --Authorization Check--
+    const userId = getUserId(req);
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Authorization required...' });
+    }
+
+    const { jobId } = req.params;
+
+    // --Basic Validation for ObjectId format--
+    if (!Types.ObjectId.isValid(jobId)) {
+      return res.status(403).json({ message: 'Invalid Job Id format..' });
+    }
+
+    // --New ObjectId
+    const jobObjectId = new Types.ObjectId(jobId);
+
+    // --Fetch job details from JObModel--
+    const job = await JobModel.findOne({
+      _id: jobObjectId,
+      status: 'open',
+    })
+      .populate('clientId', 'name email avatar')
+      .lean();
+
+    if (!job) {
+      return res
+        .status(404)
+        .json({ message: 'Job not found or is no longer open.' });
+    }
+
+    // --Check if the freelancer has already applied--
+    const application = await ApplicationModel.findOne({
+      jobId: jobObjectId,
+      userId: userId,
+    }).lean();
+
+    // --Formating details to send--
+    const jobWithMetaData = {
+      ...job,
+      hasApplied: !!application,
+    };
+
+    return res.status(200).json({
+      message: 'Job details fetched successfully',
+      data: jobWithMetaData,
+    });
+  } catch (error) {
+    console.log('Error in fetching job details', error);
+    return res
+      .status(500)
+      .json({ message: 'Server error while fetching job details.' });
   }
 };
