@@ -25,7 +25,7 @@ export const notifyFreelancersOfNewJob = async (
     const notification = freelancer.map((freelancer) => ({
       recipientId: freelancer._id,
       type: 'NEW_JOB_OPEN',
-      message: `New job posted: "${jobTitle}" is now open for applications!`,
+      message: `New job posted ${jobTitle} is now open for applications!`,
       link: `/freelancer/jobs/${jobId}`,
       read: false,
     }));

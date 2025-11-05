@@ -12,7 +12,10 @@ import {
   browseJobs,
   getSingleJobdetails,
 } from '../controllers/browseJobController';
-import { getNotifications } from '../controllers/notificationController';
+import {
+  getNotifications,
+  markAsRead,
+} from '../controllers/notificationController';
 
 const freelanceRoutes = express.Router();
 
@@ -73,6 +76,14 @@ freelanceRoutes.get(
   verifyToken,
   allowRoles('freelancer'),
   getNotifications
+);
+
+// --Mark As Read Notification--
+freelanceRoutes.patch(
+  '/read/:notificationId',
+  verifyToken,
+  allowRoles('freelancer'),
+  markAsRead
 );
 
 export default freelanceRoutes;
