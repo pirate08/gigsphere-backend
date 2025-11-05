@@ -1,5 +1,7 @@
-import JobModel from '../models/job.model';
+import JobModel, { Job } from '../models/job.model';
 import { Request, Response } from 'express';
+import { notifyFreelancersOfNewJob } from '../services/notificationService';
+import mongoose from 'mongoose';
 
 // --Get all jobs--
 export const getMyJobs = async (req: Request, res: Response) => {
@@ -44,7 +46,14 @@ export const createJob = async (req: Request, res: Response) => {
       clientId,
     });
 
-    const savedData = await newJob.save();
+    const savedData = (await newJob.save()) as Job;
+
+    // --Add notification feature here--
+    if (savedData.status === 'open') {
+      const jobIdString = (savedData._id as mongoose.Types.ObjectId).toString();
+
+      notifyFreelancersOfNewJob(jobIdString, savedData.title);
+    }
 
     return res.status(201).json({
       message: 'Job created Successfully',
@@ -61,20 +70,40 @@ export const updateJob = async (req: Request, res: Response) => {
   try {
     const clientId = req.user?.id;
     const jobId = req.params.jobId;
+    const newStatus = req.body.status;
 
     if (!clientId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    // --Update the job if it belongs to the logged in client--
-    const updatedJob = await JobModel.findOneAndUpdate(
+    // 1. Find the existing job to get its current status
+    const oldJob = await JobModel.findOne({ _id: jobId, clientId }).select(
+      'status title'
+    );
+
+    if (!oldJob) {
+      return res.status(404).json({ message: 'Job not found or unauthorized' });
+    }
+    const oldStatus = oldJob.status; // 2. Perform the update
+
+    // Cast the result to the Job interface
+    const updatedJob = (await JobModel.findOneAndUpdate(
       { _id: jobId, clientId },
       req.body,
       { new: true, runValidators: true }
-    );
+    )) as Job;
 
     if (!updatedJob) {
       return res.status(404).json({ message: 'Job not found or unauthorized' });
+    }
+
+    // 3. 📢 NOTIFICATION TRIGGER: Send notification ONLY if status changed TO 'open'
+    if (updatedJob.status === 'open' && oldStatus !== 'open') {
+      const updatedJobIdString = (
+        updatedJob._id as mongoose.Types.ObjectId
+      ).toString();
+
+      notifyFreelancersOfNewJob(updatedJobIdString, updatedJob.title);
     }
 
     return res.status(200).json({
