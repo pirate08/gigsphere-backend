@@ -12,6 +12,7 @@ import {
   browseJobs,
   getSingleJobdetails,
 } from '../controllers/browseJobController';
+import { getNotifications } from '../controllers/notificationController';
 
 const freelanceRoutes = express.Router();
 
@@ -64,6 +65,14 @@ freelanceRoutes.post(
   verifyToken,
   allowRoles('freelancer'),
   applyToAJob
+);
+
+// --Fetch Notification--
+freelanceRoutes.get(
+  '/notifications',
+  verifyToken,
+  allowRoles('freelancer'),
+  getNotifications
 );
 
 export default freelanceRoutes;

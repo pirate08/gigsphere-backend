@@ -25,8 +25,14 @@ const NotificationSchema = new Schema({
   message: { type: String, required: true },
   link: { type: String, required: true },
   read: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now, index: true },
+  createdAt: { type: Date, default: Date.now },
 });
+
+// TTL index on createdAt field. '60 * 60 * 24 * 7' is the expiration time in seconds (7 days).
+NotificationSchema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: 60 * 60 * 24 * 7 }
+);
 
 export const NotificationModel = mongoose.model<INotification>(
   'Notification',
