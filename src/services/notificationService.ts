@@ -25,7 +25,7 @@ export const notifyFreelancersOfNewJob = async (
       recipientId: freelancer._id,
       type: 'NEW_JOB_OPEN',
       message: `New job posted ${jobTitle} is now open for applications!`,
-      link: `/find-work/job-details/${jobId}`,
+      link: `/freelancer/jobs/${jobId}`,
       read: false,
     }));
 
