@@ -273,7 +273,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 
     // --Fetch dashboard stats--
     const stats = await ApplicationModel.aggregate([
-      { $match: { freelancerId: userId } },
+      { $match: { userId: userId } },
       {
         $facet: {
           // --1.Total Applied--
