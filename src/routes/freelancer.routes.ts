@@ -16,6 +16,7 @@ import {
   getNotifications,
   markAsRead,
 } from '../controllers/notificationController';
+import { changePassword } from '../controllers/settingsController';
 
 const freelanceRoutes = express.Router();
 
@@ -84,6 +85,14 @@ freelanceRoutes.patch(
   verifyToken,
   allowRoles('freelancer'),
   markAsRead
+);
+
+// --Change Password--
+freelanceRoutes.patch(
+  '/profile/password',
+  verifyToken,
+  allowRoles('freelancer'),
+  changePassword
 );
 
 export default freelanceRoutes;
