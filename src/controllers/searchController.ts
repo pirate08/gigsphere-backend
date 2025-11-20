@@ -165,3 +165,77 @@ export const searchFreelancers = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+// --View Freelancer Profile Data--
+export const viewFreelancerProfile = async (req: Request, res: Response) => {
+  try {
+    const clientId = req.user?.id;
+    if (!clientId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const { freelancerId } = req.params;
+    if (!freelancerId) {
+      return res.status(400).json({ message: 'Freelancer ID is required' });
+    }
+
+    // Find the freelancer profile and populate user details
+    const profile: any = await FreelancerProfile.findById(
+      freelancerId
+    ).populate('userId', 'name email role createdAt');
+
+    if (!profile) {
+      return res.status(404).json({ message: 'Freelancer profile not found' });
+    }
+
+    const user = profile.userId;
+
+    if (!user || typeof user === 'string' || !user._id || !user.name) {
+      return res.status(404).json({ message: 'User data not found' });
+    }
+    // Get all applications by this freelancer
+    const applications = (await ApplicationModel.find({
+      userId: user._id,
+    })
+      .populate('jobId', 'title clientId')
+      .select('userId status appliedAt coverLetter jobId')
+      .sort({ appliedAt: -1 })) as ApplicationDoc[];
+
+    // Filter applications to client's jobs only
+    const appsToClientJobs = applications.filter((app: ApplicationDoc) => {
+      const populatedJob = app.jobId as PopulatedJob;
+      return (
+        populatedJob &&
+        populatedJob.clientId &&
+        populatedJob.clientId.toString() === clientId
+      );
+    });
+
+    // Prepare the response with full freelancer details
+    const freelancerDetails = {
+      _id: profile._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      bio: profile.description,
+      location: profile.location,
+      skills: profile.skills,
+      qualification: profile.qualification,
+      yearsOfExperience: profile.yearsOfExperience,
+      hourlyRate: profile.hourlyRate,
+      portfolio: profile.portfolio,
+      certificates: profile.certificates,
+      experience: profile.experience,
+      totalApplications: applications.length,
+      applicationsToYourJobs: appsToClientJobs.length,
+      recentApplications: appsToClientJobs.slice(0, 5),
+    };
+
+    return res.status(200).json({
+      message: 'Freelancer profile retrieved successfully',
+      freelancer: freelancerDetails,
+    });
+  } catch (error) {
+    console.error('Error viewing freelancer profile:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};

@@ -13,7 +13,10 @@ import {
   getApplicationByJob,
   viewAllApplicants,
 } from '../controllers/applicationController';
-import { searchFreelancers } from '../controllers/searchController';
+import {
+  searchFreelancers,
+  viewFreelancerProfile,
+} from '../controllers/searchController';
 import {
   changePassword,
   getProfileData,
@@ -101,6 +104,14 @@ clientRoutes.get(
   verifyToken,
   allowRoles('client'),
   searchFreelancers
+);
+
+// --View Freelancer Profile Data--
+clientRoutes.get(
+  '/freelancers/:freelancerId/profile',
+  verifyToken,
+  allowRoles('client'),
+  viewFreelancerProfile
 );
 
 export default clientRoutes;
