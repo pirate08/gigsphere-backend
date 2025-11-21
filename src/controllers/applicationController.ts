@@ -1,7 +1,9 @@
 import ApplicationModel from '../models/application.model';
+import FreelancerProfile from '../models/freelancerProfile.model';
 import JobModel from '../models/job.model';
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
+
 
 // --View Applications per job--
 export const getApplicationByJob = async (req: Request, res: Response) => {
@@ -31,12 +33,27 @@ export const getApplicationByJob = async (req: Request, res: Response) => {
         message: 'No applicants yet',
         applications: [],
         jobTitle: job.title || 'Job',
+        totalApplications: 0,
       });
     }
 
+    // ✅ NEW: Get freelancer profile IDs for each application
+    const applicationsWithProfiles = await Promise.all(
+      applications.map(async (app: any) => {
+        const profile = await FreelancerProfile.findOne({
+          userId: app.userId._id,
+        }).select('_id');
+
+        return {
+          ...app.toObject(),
+          freelancerProfileId: profile?._id || null,
+        };
+      })
+    );
+
     return res.status(200).json({
       message: 'Applications fetched successfully',
-      applications,
+      applications: applicationsWithProfiles,
       jobTitle: job.title || 'Job',
       totalApplications: applications.length,
     });
