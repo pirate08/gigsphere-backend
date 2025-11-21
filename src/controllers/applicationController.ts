@@ -3,7 +3,7 @@ import FreelancerProfile from '../models/freelancerProfile.model';
 import JobModel from '../models/job.model';
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
-
+import { notifyApplicationStatusChange } from '../utils/notificationHelper';
 
 // --View Applications per job--
 export const getApplicationByJob = async (req: Request, res: Response) => {
@@ -67,7 +67,7 @@ export const getApplicationByJob = async (req: Request, res: Response) => {
 export const acceptOrRejectApplicant = async (req: Request, res: Response) => {
   try {
     const clientId = req.user?.id;
-    const applicantId = req.params.applicantId; // Fixed: was applicationId
+    const applicantId = req.params.applicantId;
     const { status } = req.body;
 
     // Check if the client is logged in or not--
@@ -88,7 +88,7 @@ export const acceptOrRejectApplicant = async (req: Request, res: Response) => {
     // --Find the Application--
     const application = await ApplicationModel.findById(applicantId).populate(
       'jobId'
-    ); // Fixed: removed object wrapper
+    );
 
     if (!application) {
       return res.status(404).json({ message: 'Application not found' });
@@ -102,12 +102,35 @@ export const acceptOrRejectApplicant = async (req: Request, res: Response) => {
       return res.status(403).json({ message: 'Forbidden: Not your job' });
     }
 
+    // ✅ NEW: Store the old status to check if it changed
+    const oldStatus = application.status;
+
+    // Update the status
     application.status = status;
     await application.save();
 
-    return res
-      .status(200)
-      .json({ message: `Application ${status}`, application });
+    // ✅ FIXED: Explicitly convert to string using toString() or String()
+    if (
+      oldStatus !== status &&
+      (status === 'accepted' || status === 'rejected')
+    ) {
+      // Run notification in background (don't await to avoid blocking response)
+      notifyApplicationStatusChange(
+        application.userId.toString(),
+        clientId,
+        populatedJob._id.toString(),
+        status,
+        String(application._id)
+      ).catch((error) => {
+        console.error('Failed to send notification:', error);
+        // Don't fail the request if notification fails
+      });
+    }
+
+    return res.status(200).json({
+      message: `Application ${status} successfully`,
+      application,
+    });
   } catch (error) {
     console.log('Cannot accept or reject the applicant', error);
     return res.status(500).json({ message: 'Internal Server Error' });
